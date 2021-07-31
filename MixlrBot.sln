@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31424.327
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MixlrBot", "MixlrBot\MixlrBot.csproj", "{70A35869-FE1D-42E0-BE98-534B619F5E59}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mixlr.ApiClient", "Mixlr.ApiClient\Mixlr.ApiClient.csproj", "{B6B6183A-1B40-4F40-BFB1-89FC6CCEC251}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{70A35869-FE1D-42E0-BE98-534B619F5E59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70A35869-FE1D-42E0-BE98-534B619F5E59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70A35869-FE1D-42E0-BE98-534B619F5E59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70A35869-FE1D-42E0-BE98-534B619F5E59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6B6183A-1B40-4F40-BFB1-89FC6CCEC251}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6B6183A-1B40-4F40-BFB1-89FC6CCEC251}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6B6183A-1B40-4F40-BFB1-89FC6CCEC251}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6B6183A-1B40-4F40-BFB1-89FC6CCEC251}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {11D3DDE1-E5D7-4433-BC17-02F0F9D0B06B}
+	EndGlobalSection
+EndGlobal
