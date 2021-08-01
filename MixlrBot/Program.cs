@@ -2,7 +2,6 @@
 using Mixlr.ApiClient.Models.Users;
 using MixlrBot.Discord;
 using MixlrBot.Mixlr;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,38 +45,32 @@ namespace MixlrBot
             _isRunning = true;
 
             //Set up client wrappers
-            var guildAccess = Configuration.GetSection("DiscordGuilds").Get<List<GuildAccessOptions>>();
-
-            _discordWrapper = new DiscordWrapper(Configuration["DiscordBotToken"], guildAccess);
-
-            var userList = new List<string>();
-            var mixlrUsers = Configuration.GetSection("MixlrUsers").GetChildren().ToList();
-            foreach (var mxUser in mixlrUsers)
-            {
-                userList.Add(mxUser.Value);
-            }
-
-            _mixlrWrapper = new MixlrWrapper(Configuration["MixlrApiUrl"], userList);
+            _discordWrapper = new DiscordWrapper(Configuration["DiscordBotToken"], Configuration.GetSection("DiscordGuilds").Get<List<GuildAccessOptions>>());
+            _mixlrWrapper = new MixlrWrapper(Configuration["MixlrApiUrl"], Configuration.GetSection("MixlrUsers").Get<List<string>>());
 
             //Start discord connection
             await _discordWrapper.Login();
 
             //Set up worker thread
-            Console.WriteLine("Checking mixlr users...");
-
             await Task.Factory.StartNew(async () =>
             {
                 while (!_reset && _isRunning)
                 {
-                    //If we checked less than 5 minutes ago, skip checking again
+                    Thread.Sleep(500);
+
+                    //If we checked less than 1 minute ago, skip checking again
                     if ((DateTime.Now - _mixlrWrapper.LastUpdate).TotalMinutes <= 1)
                         continue;
+
+                    Console.WriteLine($"{DateTime.Now:u} Checking mixlr users...");
 
                     await CheckMixlrUsers();
 
                     await CheckLiveMixlrUsers();
 
-                    Thread.Sleep(500);
+                    _mixlrWrapper.LastUpdate = DateTime.Now;
+
+                    Console.WriteLine($"{DateTime.Now:u} Checked all mixlr users. Sleeping...");
                 }
             });
         }
@@ -86,30 +79,40 @@ namespace MixlrBot
         {
             foreach (var user in _mixlrWrapper.MixlrUsers)
             {
-                var userInfo = await _mixlrWrapper.GetUser(user);
-
-                if (userInfo.IsLive.HasValue && userInfo.IsLive.Value)
+                try
                 {
-                    //Check for broadcast id
-                    if (userInfo.BroadcastIds == null || userInfo.BroadcastIds.Count < 1)
-                        continue;
+                    var userInfo = await _mixlrWrapper.GetUser(user);
 
-                    //Check if already was live
-                    if (_mixlrWrapper.LiveMixlrUsers.Any(x => x.Username == userInfo.Username))
-                        continue;
 
-                    //Add user to Live list
-                    _mixlrWrapper.LiveMixlrUsers.Add(userInfo);
+                    if (userInfo.IsLive.HasValue && userInfo.IsLive.Value)
+                    {
+                        //Check for broadcast id
+                        if (userInfo.BroadcastIds == null || userInfo.BroadcastIds.Count < 1)
+                            continue;
 
-                    //Get broadcast info
-                    var broadcastInfo = await _mixlrWrapper.GetBroadcast(userInfo.BroadcastIds[0]);
+                        //Check if already was live
+                        if (_mixlrWrapper.LiveMixlrUsers.Any(x => x.Username == userInfo.Username))
+                            continue;
 
-                    //Send notification
-                    Console.WriteLine($"{userInfo.Username} is live. Sending notification...");
-                    await _discordWrapper.WritePost(userInfo, broadcastInfo);
+                        //Add user to Live list
+                        _mixlrWrapper.LiveMixlrUsers.Add(userInfo);
+
+                        //Get broadcast info
+                        var broadcastInfo = await _mixlrWrapper.GetBroadcast(userInfo.BroadcastIds[0]);
+
+                        //Send notification
+                        Console.WriteLine($"{DateTime.Now:u} {userInfo.Username} is live. Sending notification...");
+                        await _discordWrapper.WritePost(userInfo, broadcastInfo);
+                    }
                 }
-
-                Thread.Sleep(250);
+                catch
+                {
+                    continue;
+                }
+                finally
+                {
+                    Thread.Sleep(150);
+                }
             }
         }
 
@@ -118,20 +121,30 @@ namespace MixlrBot
             var noLongerLive = new List<User>();
             foreach (var user in _mixlrWrapper.LiveMixlrUsers)
             {
-                var userInfo = await _mixlrWrapper.GetUser(user.Id);
+                try
+                {
 
-                if (userInfo.IsLive.HasValue && userInfo.IsLive.Value)
+                    var userInfo = await _mixlrWrapper.GetUser(user.Id);
+
+                    if (userInfo.IsLive.HasValue && userInfo.IsLive.Value)
+                        continue;
+
+                    Console.WriteLine($"{DateTime.Now:u} {user.Username} is no longer live.");
+                    noLongerLive.Add(user);
+                }
+                catch
+                {
                     continue;
-
-                Console.WriteLine($"{user.Username} is no longer live.");
-                noLongerLive.Add(user);
-
-                Thread.Sleep(250);
+                }
+                finally
+                {
+                    Thread.Sleep(150);
+                }
             }
 
             foreach (var user in noLongerLive)
             {
-                Console.WriteLine($"Removing {user.Username} from Live list...");
+                Console.WriteLine($"{DateTime.Now:u} Removing {user.Username} from Live list...");
                 _mixlrWrapper.LiveMixlrUsers.Remove(user);
             }
         }
