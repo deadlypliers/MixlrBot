@@ -15,26 +15,37 @@ namespace MixlrBot.Discord
 
         private readonly DiscordSocketClient _discordClient;
         private readonly string _token;
-        private readonly ulong _guildId;
-        private readonly ulong _channelId;
+        //private readonly ulong _guildId;
+        //private readonly ulong _channelId;
+        private List<GuildAccessOptions> _guilds;
         private bool _connected;
-
-        private List<string> _guildIds;
-        private List<string> _roomIds;
 
         #region Constructor
 
         public DiscordWrapper(string token, string guildId, string channelId)
         {
             this._token = token;
-            this._guildId = Convert.ToUInt64(guildId);
-            this._channelId = Convert.ToUInt64(channelId);
+            //this._guildId = Convert.ToUInt64(guildId);
+            //this._channelId = Convert.ToUInt64(channelId);
 
-            _guildIds = new List<string>();
-            _roomIds = new List<string>();
+            this._guilds = new List<GuildAccessOptions>();
+            this._guilds.Add(new GuildAccessOptions
+            {
+                GuildId = Convert.ToUInt64(guildId),
+                ChannelId = Convert.ToUInt64(channelId)
+            });
 
             _discordClient = new DiscordSocketClient();
 
+            LastUpdate = DateTime.MinValue;
+        }
+
+        public DiscordWrapper(string token, List<GuildAccessOptions> guildAccess)
+        {
+            this._token = token;
+            this._guilds = guildAccess;
+
+            _discordClient = new DiscordSocketClient();
             LastUpdate = DateTime.MinValue;
         }
 
@@ -49,11 +60,6 @@ namespace MixlrBot.Discord
             _discordClient.Connected += DiscordConnected;
             _discordClient.Disconnected += DiscordDisconnected;
             await _discordClient.StartAsync();
-
-            //foreach (var guild in _discordClient.Guilds)
-            //{
-            //    _guildIds.Add(guild.Id.ToString());
-            //}
         }
 
         public async Task Logout()
@@ -76,40 +82,49 @@ namespace MixlrBot.Discord
                 Thread.Sleep(2000);
             }
 
-            var guild = _discordClient.GetGuild(_guildId);
-            var channel = guild.GetTextChannel(_channelId);
-
-            var embedAuthorBuilder = new EmbedAuthorBuilder()
+            foreach (var guild in _guilds)
             {
-                IconUrl = user.ProfileImageUrl,
-                Name = user.Username,
-                Url = user.Url
-            };
+                var guildInfo = _discordClient.GetGuild(guild.GuildId);
+                var channel = guildInfo.GetTextChannel(guild.ChannelId);
 
-            var embedFieldsBuilders = new List<EmbedFieldBuilder>
-            {
-                new EmbedFieldBuilder()
+                var embedAuthorBuilder = new EmbedAuthorBuilder()
                 {
-                    IsInline = false,
-                    Name = "Show Title",
-                    Value = broadcast.Title
-                }
-            };
+                    IconUrl = user.ProfileImageUrl,
+                    Name = user.Username,
+                    Url = user.Url
+                };
 
-            var embedBuilder = new EmbedBuilder
-            {
-                Author = embedAuthorBuilder,
-                Color = Color.Red,
-                Description = user.AboutMe,
-                Fields = embedFieldsBuilders,
-                Footer = null,
-                ThumbnailUrl = user.ProfileImageUrl,
-                Timestamp = broadcast.StartedAt,
-            };
+                var embedFieldsBuilders = new List<EmbedFieldBuilder>
+                {
+                    new EmbedFieldBuilder()
+                    {
+                        IsInline = false,
+                        Name = "Show Title",
+                        Value = broadcast.Title
+                    },
+                    new EmbedFieldBuilder()
+                    {
+                        IsInline = false,
+                        Name = "Hearts",
+                        Value = broadcast.HeartCount ?? 0
+                    }
+                };
 
-            var embed = embedBuilder.Build();
+                var embedBuilder = new EmbedBuilder
+                {
+                    Author = embedAuthorBuilder,
+                    Color = Color.Red,
+                    Description = user.AboutMe,
+                    Fields = embedFieldsBuilders,
+                    Footer = null,
+                    ThumbnailUrl = user.ProfileImageUrl,
+                    Timestamp = broadcast.StartedAt,
+                };
 
-            await channel.SendMessageAsync($"@everyone {user.Username} is live!", false, embed, null, AllowedMentions.All);
+                var embed = embedBuilder.Build();
+
+                await channel.SendMessageAsync($"@everyone {user.Username} is live!", false, embed, null, AllowedMentions.All);
+            }
         }
 
         #endregion

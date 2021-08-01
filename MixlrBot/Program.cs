@@ -46,8 +46,9 @@ namespace MixlrBot
             _isRunning = true;
 
             //Set up client wrappers
-            _discordWrapper = new DiscordWrapper(Configuration["DiscordBotToken"], Configuration["DiscordGuildId"], 
-                Configuration["DiscordRoomId"]);
+            var guildAccess = Configuration.GetSection("DiscordGuilds").Get<List<GuildAccessOptions>>();
+
+            _discordWrapper = new DiscordWrapper(Configuration["DiscordBotToken"], guildAccess);
 
             var userList = new List<string>();
             var mixlrUsers = Configuration.GetSection("MixlrUsers").GetChildren().ToList();

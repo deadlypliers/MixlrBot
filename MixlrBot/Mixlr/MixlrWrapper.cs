@@ -11,8 +11,8 @@ namespace MixlrBot.Mixlr
     public class MixlrWrapper
     {
         public DateTime LastUpdate { get; set; }
-        public List<string> MixlrUsers;
-        public List<User> LiveMixlrUsers;
+        public List<string> MixlrUsers { get; set; }
+        public List<User> LiveMixlrUsers { get; set; }
 
         private UserClient _userClient;
         private BroadcastClient _broadcastClient;
